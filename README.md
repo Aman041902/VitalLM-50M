@@ -2,7 +2,7 @@
 
 [![Hugging Face Model](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-orange)](https://huggingface.co/aman0419/Vitallm-50M)
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/aman0419/VitalLM-50M-Demo)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 VitalLM-50M is a **50.55 million parameter** decoder-only Transformer built from scratch and specialized for the biomedical domain. It was trained on a filtered **764M token corpus** of clinical dialogues and medical research to provide high-density reasoning in a compact footprint.
 
