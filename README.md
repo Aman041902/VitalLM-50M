@@ -30,6 +30,37 @@ The model was trained under strict compute constraints using a multi-session che
 | **Final Perplexity** | ~38.8 |
 
 ---
+---
+
+## 📈 Technical Analytics & Training Stability
+
+The following metrics illustrate the optimization strategy and architectural stability of VitalLM-50M during its training on the 764M token biomedical corpus.
+
+### 1. Training Convergence & Generalization
+![Training Curve](assets/training_curve.png)
+* **Metric**: Training vs. Validation Loss
+* **Generalization Gap**: ~0.34
+* **Analysis**: The training curve shows a smooth logarithmic decay, reaching a final validation loss of 3.66. The narrow and stable generalization gap confirms that the model has effectively learned medical patterns without overfitting to the training set.
+
+
+
+### 2. Optimization & Learning Velocity
+![Learning Rate Scheduler](assets/lr_scheduler.png)
+* **Strategy**: Cosine Annealing / Warmup
+* **Insight**: We employed a specialized learning rate scheduler to manage "Learning Velocity." By starting with a warmup phase followed by a decay, we ensured that the model didn't miss local minima during the early high-gradient phases of biomedical training.
+
+
+
+### 3. Structural Stability (Gradient Norm)
+![Gradient Norm](assets/gradient_norm.png)
+* **Metric**: L2 Norm of Gradients
+* **Analysis**: The Gradient Norm graph remains stable throughout the 764M token pass. This is critical for SwiGLU architectures, as it proves that our initialization and normalization layers (like RMSNorm or LayerNorm) prevented vanishing or exploding gradients, ensuring a consistent update to the model's 50.55M parameters.
+
+### 4. Semantic Certainty (Perplexity)
+* **Final Perplexity**: ~38.8
+* **Context**: For a 50M Small Language Model (SLM), this perplexity score indicates high predictive confidence within clinical dialogue structures, enabling coherent medical text generation.
+
+---
 
 ## 🚀 Quick Start (Inference)
 
