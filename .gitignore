@@ -1,0 +1,17 @@
+# Ignore model weights (stored on Hugging Face)
+*.pt
+*.bin
+*.pth
+*.ckpt
+
+# Python environment and cache
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+env/
+
+# Data and Logs
+*.log
+checkpoint/
