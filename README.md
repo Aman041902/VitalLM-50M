@@ -125,7 +125,6 @@ with torch.no_grad():
 print(f"Response: {tokenizer.decode(input_ids[0].tolist(), skip_special_tokens=True)}")
 ```
 ## 🔬Challenges & Engineering Insights
-* **Inference Optimization**: Faced challenges with semantic repetition loops. Resolved by implementing Repetition Penalty (1.2) and Nucleus (Top-P) Sampling in the deployment pipeline.
 
 * **Compute Strategy**: Engineered a custom state-recovery system to manage multi-session training across 12-hour compute limits without loss spikes.
 
