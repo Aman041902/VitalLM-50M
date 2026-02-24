@@ -35,13 +35,11 @@ The model was trained under strict compute constraints using a multi-session che
 
 To use VitalLM-50M, clone this repo and ensure you have `torch` and `transformers` installed.
 
-### 🚀 Quick Start & Sample Inference
-### 🚀 Quick Start & Sample Inference
 
 To run the model, first clone this repository to get the custom architecture definitions:
 
 ```bash
-git clone [https://github.com/YOUR_USERNAME/VitalLM-50M.git](https://github.com/YOUR_USERNAME/VitalLM-50M.git)
+git clone https://github.com/Aman041902/VitalLM-50M.git
 cd VitalLM-50M
 pip install torch transformers huggingface_hub
 ```
