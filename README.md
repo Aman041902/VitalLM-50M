@@ -1,73 +1,137 @@
-# 🏥 VitalLM-50M: Medical-Domain Small Language Model (SLM)
+# 🏥 VitalLM-50M: Medical-Domain Small Language Model
 
-[![Hugging Face Model](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-orange)](https://huggingface.co/aman0419/Vitallm-50M)
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/aman0419/VitalLM-50M-Demo)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+<p align="center">
+  <a href="https://huggingface.co/aman0419/Vitallm-50M"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Model-orange?style=for-the-badge" alt="HF Model"></a>
+  <a href="https://huggingface.co/spaces/aman0419/VitalLM-50M-Demo"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Live%20Demo-blue?style=for-the-badge" alt="HF Demo"></a>
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge" alt="License"></a>
+</p>
 
-VitalLM-50M is a **50.55 million parameter** decoder-only Transformer built from scratch and specialized for the biomedical domain. It was trained on a filtered **764M token corpus** of clinical dialogues and medical research to provide high-density reasoning in a compact footprint.
-
----
-
-## 🛠️ Key Architectural Features
-
-* **Custom Transformer Engine**: Implemented a decoder-only architecture using PyTorch, featuring causal self-attention mechanisms.
-* **SwiGLU Activation**: Utilized the **SwiGLU** (Swish-Gated Linear Unit) activation function, as used in state-of-the-art models like Llama 3, to improve non-linear clinical reasoning.
-* **Specialized Tokenization**: Developed a custom **ByteLevelBPE** tokenizer with a 16,384 vocabulary size, specifically optimized for complex medical nomenclature (e.g., pharmacokinetics, pathophysiology).
-* **Resource Optimized**: Built for edge deployment, utilizing **Weight Tying** to reduce the memory footprint while maintaining a context window of **256 tokens**.
+<p align="center">
+  <b>A 50.55M parameter decoder-only Transformer pretrained on 764M+ biomedical tokens and fine-tuned for instruction-following clinical dialogue.</b>
+</p>
 
 ---
 
-## 📊 Performance & Training
+## 📌 Overview
 
-The model was trained under strict compute constraints using a multi-session checkpointing strategy on an NVIDIA P100.
+VitalLM-50M-Instruct is a compact, edge-deployable Small Language Model (SLM) purpose-built for the biomedical domain. It was developed through a **two-stage training pipeline**:
+
+1. **Pretraining** on a 764M+ token filtered corpus of clinical literature and medical dialogues — learning deep biomedical language representations from scratch.
+2. **Supervised Fine-Tuning (SFT)** on 100K curated medical instruction-response pairs — aligning the model to follow clinical prompts and generate structured doctor-patient responses.
+
+| Stage | Dataset | Scale | Objective |
+|:---|:---|:---|:---|
+| **Pretraining** | PubMed QA, MedMCQA, BI55/MedText | 764M+ tokens | Next-token prediction |
+| **SFT** | Mohammed-Altaf/medical-instruction-100k | ~100K pairs | Instruction following |
+
+---
+
+## 🏗️ Architecture
+
+VitalLM-50M uses a custom decoder-only Transformer implemented from scratch in PyTorch, drawing on design choices from state-of-the-art SLMs.
+
+| Parameter | Value | Notes |
+|:---|:---|:---|
+| **Total Parameters** | 50,554,880 | ~50.55M |
+| **Architecture** | Decoder-only Transformer | Custom GPT-style |
+| **Layers / Heads / Dim** | 10 / 8 / 512 | — |
+| **Context Window** | 256 tokens | Clinical Q&A optimized |
+| **Activation** | SwiGLU | Used in Llama 3 |
+| **Tokenizer** | ByteLevelBPE | Vocab size: 16,384 |
+| **Normalization** | RMSNorm / LayerNorm | Gradient stability |
+| **Weight Tying** | ✅ | Reduced memory footprint |
+
+### Key Design Choices
+
+**SwiGLU Activation** — Unlike standard ReLU/GeLU activations, SwiGLU improves non-linear reasoning density, enabling richer capture of complex relationships between medical symptoms, diagnoses, and drug interactions.
+
+**Specialized Biomedical Tokenizer** — A custom ByteLevelBPE tokenizer was trained to preserve medical terminology as coherent units (e.g., `tachycardia`, `bronchitis`, `pharmacokinetics`), preventing fragmentation that degrades downstream reasoning quality.
+
+**Weight Tying + Edge Optimization** — Parameter sharing between the input embedding and output projection layer reduces the effective memory footprint, making the model suitable for constrained environments without sacrificing representational capacity.
+
+---
+
+## 📈 Stage 1: Pretraining
+
+### Corpus & Data Strategy
+
+- **Total Tokens**: 764M+ filtered biomedical tokens
+- **Sources**: PubMed QA, MedMCQA, BI55/MedText
+- **Processing**: Extensive de-duplication and signal-preserving cleaning to maximize dataset quality within compute constraints
+
+### Hardware & Optimization
+
+- **GPU**: NVIDIA P100 (Kaggle, 12-hour session limit)
+- **Optimizer**: AdamW with weight decay (0.1)
+- **Scheduler**: Cosine annealing with linear warmup
+- **Strategy**: Custom state-recovery checkpointing to handle multi-session training without loss spikes
+
+### Pretraining Results
 
 | Metric | Value |
-| :--- | :--- |
-| **Total Parameters** | 50,554,880 |
-| **Layers / Heads / Dim** | 10 / 8 / 512 |
-| **Training Loss** | 3.32 |
-| **Validation Loss** | 3.66 |
+|:---|:---|
+| **Final Training Loss** | 3.32 |
+| **Final Validation Loss** | 3.66 |
+| **Generalization Gap** | ~0.34 |
 | **Final Perplexity** | ~38.8 |
 
----
----
+### Training Analytics
 
-## 📈 Technical Analytics & Training Stability
-
-The following metrics illustrate the optimization strategy and architectural stability of VitalLM-50M during its training on the 764M token biomedical corpus.
-
-### 1. Training Convergence & Generalization
+#### Loss Convergence
 ![Training Curve](assets/training_curve.png)
-* **Metric**: Training vs. Validation Loss
-* **Generalization Gap**: ~0.34
-* **Analysis**: The training curve shows a smooth logarithmic decay, reaching a final validation loss of 3.66. The narrow and stable generalization gap confirms that the model has effectively learned medical patterns without overfitting to the training set.
 
+The curve shows smooth logarithmic decay to a validation loss of 3.66. The narrow, stable generalization gap (~0.34) confirms effective learning of medical patterns without overfitting.
 
+#### Learning Rate Schedule
+![LR Scheduler](assets/lr_scheduler.png)
 
-### 2. Optimization & Learning Velocity
-![Learning Rate Scheduler](assets/lr_scheduler.png)
-* **Strategy**: Cosine Annealing / Warmup
-* **Insight**: We employed a specialized learning rate scheduler to manage "Learning Velocity." By starting with a warmup phase followed by a decay, we ensured that the model didn't miss local minima during the early high-gradient phases of biomedical training.
+A cosine annealing schedule with warmup was used to manage learning velocity — preventing premature convergence in the early high-gradient phases of biomedical training.
 
-
-
-### 3. Structural Stability (Gradient Norm)
+#### Gradient Stability
 ![Gradient Norm](assets/gradient_norm.png)
-* **Metric**: L2 Norm of Gradients
-* **Analysis**: The Gradient Norm graph remains stable throughout the 764M token pass. This is critical for SwiGLU architectures, as it proves that our initialization and normalization layers (like RMSNorm or LayerNorm) prevented vanishing or exploding gradients, ensuring a consistent update to the model's 50.55M parameters.
 
-### 4. Semantic Certainty (Perplexity)
-* **Final Perplexity**: ~38.8
-* **Context**: For a 50M Small Language Model (SLM), this perplexity score indicates high predictive confidence within clinical dialogue structures, enabling coherent medical text generation.
+The L2 gradient norm remained stable throughout the full 764M token pass, confirming that the RMSNorm/LayerNorm layers successfully prevented vanishing or exploding gradients in the SwiGLU architecture.
 
 ---
 
-## 🚀 Quick Start (Inference)
+## 🎯 Stage 2: Supervised Fine-Tuning (SFT)
 
-To use VitalLM-50M, clone this repo and ensure you have `torch` and `transformers` installed.
+### SFT Dataset
 
+- **Dataset**: [`Mohammed-Altaf/medical-instruction-100k`](https://huggingface.co/datasets/Mohammed-Altaf/medical-instruction-100k)
+- **Size**: ~100,000 instruction-response pairs
+- **Format**: Instruction-following medical Q&A covering symptoms, diagnoses, treatments, and clinical dialogue structures
 
-To run the model, first clone this repository to get the custom architecture definitions:
+### Objective
+
+SFT shifted the model from **open-ended next-token generation** (pretraining) to **structured instruction-following** — enabling it to reliably respond to clinical prompts in a doctor-patient dialogue format. Only tokens in the **response portion** were included in the loss computation (standard causal LM SFT approach).
+
+### Hardware & Optimization
+
+- **GPU**: NVIDIA P100 (Kaggle)
+- **Optimizer**: AdamW with weight decay (0.1)
+- **Scheduler**: Cosine decay with linear warmup (peak LR: 2e-5)
+- **Training Duration**: ~4,300 iterations
+
+### SFT Results
+
+| Metric | Value |
+|:---|:---|
+| **Best Training Loss** | 2.9866 |
+| **Final Training Loss** | ~2.96 |
+| **Final Validation Loss** | ~2.99 |
+| **Final Train Perplexity** | ~19.5 |
+| **Final Val Perplexity** | ~19.8 |
+
+The significant drop in perplexity from ~38.8 (pretrained) to ~19.8 (SFT) reflects the model's improved ability to generate structured, contextually appropriate clinical responses after instruction alignment.
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+
+Clone this repository to get the custom architecture definitions, then install dependencies:
 
 ```bash
 git clone https://github.com/Aman041902/VitalLM-50M.git
@@ -75,8 +139,8 @@ cd VitalLM-50M
 pip install torch transformers huggingface_hub
 ```
 
-Users can run the model directly by pulling the latest weights and configuration from the Hugging Face Hub. 
-Then, run the following script (ensure model.py is in your current directory):
+### Loading the Pretrained Base Model
+
 ```python
 import torch
 import torch.nn.functional as F
@@ -84,51 +148,138 @@ from model import SLM, SLMConfig
 from transformers import PreTrainedTokenizerFast
 from huggingface_hub import hf_hub_download
 
-# 1. Download files from Hugging Face
-repo_id = "aman0419/Vitallm-50M" 
+# Download weights from Hugging Face Hub
+repo_id = "aman0419/Vitallm-50M"
 weights_path = hf_hub_download(repo_id=repo_id, filename="vital_lm_50m_weights.pt")
-vocab_path = hf_hub_download(repo_id=repo_id, filename="vocab_50m.json")
-merges_path = hf_hub_download(repo_id=repo_id, filename="merges_50m.txt")
+vocab_path   = hf_hub_download(repo_id=repo_id, filename="vocab_50m.json")
+merges_path  = hf_hub_download(repo_id=repo_id, filename="merges_50m.txt")
 
-# 2. Initialize Architecture
+# Initialize architecture and load weights
 config = SLMConfig(vocab_size=16384, n_layer=10, n_head=8, n_embd=512, block_size=256)
 model = SLM(config)
 model.load_state_dict(torch.load(weights_path, map_location="cpu"))
 model.eval()
 
-# 3. Setup Tokenizer
+# Initialize tokenizer
 tokenizer = PreTrainedTokenizerFast(
     vocab_file=vocab_path, merges_file=merges_path,
     eos_token="<|endoftext|>", pad_token="<|endoftext|>"
 )
-
-# 4. Sample Prompt & Generation Logic
-prompt = "Patient: I have a persistent cough and high fever. Doctor:"
-input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0)
-
-print(f"Prompt: {prompt}")
-
-with torch.no_grad():
-    for _ in range(50): # Generate up to 50 new tokens
-        # Ensure we don't exceed the context window
-        logits, _ = model(input_ids[:, -256:])
-        logits = logits[:, -1, :] / 0.7 # Temperature scaling
-        
-        # Sample the next token
-        probs = F.softmax(logits, dim=-1)
-        next_token = torch.multinomial(probs, num_samples=1)
-        
-        input_ids = torch.cat((input_ids, next_token), dim=1)
-        if next_token.item() == tokenizer.eos_token_id:
-            break
-
-print(f"Response: {tokenizer.decode(input_ids[0].tolist(), skip_special_tokens=True)}")
 ```
-## 🔬Challenges & Engineering Insights
 
-* **Compute Strategy**: Engineered a custom state-recovery system to manage multi-session training across 12-hour compute limits without loss spikes.
+### Loading the Instruction-Tuned (SFT) Model
 
-* **Data Quality**: Curated a biomedical-heavy subset from open-source clinical datasets, focusing on high-signal medical dialogues.
+```python
+import torch
+import torch.nn.functional as F
+from model import SLM, SLMConfig
+from transformers import PreTrainedTokenizerFast
+from huggingface_hub import hf_hub_download
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+repo_id = "aman0419/Vitallm-50M"
+sft_weights_path = hf_hub_download(repo_id=repo_id, filename="VitalLM_SFT_best.pt")
+vocab_path        = hf_hub_download(repo_id=repo_id, filename="vocab_50m.json")
+merges_path       = hf_hub_download(repo_id=repo_id, filename="merges_50m.txt")
+
+config = SLMConfig(vocab_size=16384, n_layer=10, n_head=8, n_embd=512, block_size=256, dropout=0.0)
+model  = SLM(config)
+model.load_state_dict(torch.load(sft_weights_path, map_location=device))
+model.to(device)
+model.eval()
+
+tokenizer = PreTrainedTokenizerFast(
+    vocab_file=vocab_path, merges_file=merges_path,
+    bos_token="<|endoftext|>", eos_token="<|endoftext|>",
+    unk_token="<|endoftext|>",  pad_token="<|endoftext|>"
+)
+```
+
+### Inference
+
+```python
+def generate_medical_response(prompt, max_new_tokens=150, temperature=0.4, top_k=40):
+    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        for _ in range(max_new_tokens):
+            logits, _ = model(input_ids[:, -256:])   # Respect 256-token context window
+            logits = logits[:, -1, :] / temperature
+
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float("Inf")
+
+            probs      = F.softmax(logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+            input_ids  = torch.cat((input_ids, next_token), dim=1)
+
+            if next_token.item() == tokenizer.eos_token_id:
+                break
+
+    return tokenizer.decode(input_ids[0].tolist(), skip_special_tokens=True)
+
+# Example
+prompt   = "Patient: I have been feeling very thirsty and urinating frequently. Doctor:"
+response = generate_medical_response(prompt)
+print(response)
+```
+
+### Recommended Prompt Format
+
+For best results with the SFT model, use the following dialogue-style format:
+
+```
+Patient: <symptom or question>
+Doctor:
+```
+
+---
+
+## 📁 Repository Structure
+
+```
+VitalLM-50M/
+├── assets/                  # Training analytics plots
+│   ├── training_curve.png
+│   ├── lr_scheduler.png
+│   └── gradient_norm.png
+├── src/                     # Source scripts
+├── model.py                 # Model architecture (SLM, SLMConfig)
+├── app.py                   # Gradio demo application
+├── vocab_50m.json           # Custom BPE tokenizer vocabulary
+├── merges_50m.txt           # BPE merge rules
+└── README.md
+```
+
+### Hugging Face Model Files
+
+| File | Description |
+|:---|:---|
+| `VitalLM_SFT_best.pt` | SFT model weights (instruction-tuned) |
+| `vital_lm_50m_weights.pt` | Pretrained base model weights |
+| `model.py` | Architecture definition |
+| `vocab_50m.json` | Tokenizer vocabulary |
+| `merges_50m.txt` | BPE merge rules |
+| `config.json` | Model configuration |
+
+---
+
+## 🔬 Engineering Insights
+
+**Multi-Session Training Recovery** — Both pretraining and SFT were conducted under Kaggle's 12-hour session limit. A custom state-recovery system was engineered to checkpoint optimizer state, scheduler step, and model weights, allowing seamless resumption without loss spikes across sessions.
+
+**Data Curation Pipeline** — The pretraining corpus was assembled from multiple open-source biomedical datasets with targeted de-duplication and quality filtering, prioritizing high-signal clinical dialogues over low-density reference text.
+
+**SFT Alignment Strategy** — The SFT stage used response-only loss masking (instruction tokens excluded from loss) to focus gradient updates on the generation quality of medical answers, rather than the re-learning of prompt patterns already acquired during pretraining.
+
+---
 
 ## ⚠️ Disclaimer
-This model is for educational and research purposes only. It is not intended for clinical use or to provide professional medical advice.
+
+VitalLM-50M-Instruct is intended **for educational and research purposes only**. It is not a validated clinical tool and must not be used as a substitute for professional medical advice, diagnosis, or treatment. Outputs may contain factual inaccuracies. Always consult a qualified healthcare provider for medical decisions.
+
+---
+
+<p align="center">Released under the <a href="https://opensource.org/licenses/Apache-2.0">Apache 2.0 License</a></p>
