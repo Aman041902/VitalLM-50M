@@ -30,8 +30,6 @@ VitalLM-50M uses a custom decoder-only Transformer implemented from scratch in P
 | **Context Window** | 256 tokens | Clinical Q&A optimized |
 | **Activation** | SwiGLU | Used in Llama 3 |
 | **Tokenizer** | ByteLevelBPE | Vocab size: 16,384 |
-| **Normalization** | RMSNorm / LayerNorm | Gradient stability |
-| **Weight Tying** | ✅ | Reduced memory footprint |
 
 ### Key Design Choices
 
@@ -46,13 +44,13 @@ VitalLM-50M uses a custom decoder-only Transformer implemented from scratch in P
 
 ### Corpus & Data Strategy
 
-- **Total Tokens**: 764M+ filtered biomedical tokens
+- **Total Tokens**: 550+ filtered biomedical tokens
 - **Sources**: PubMed QA, MedMCQA, BI55/MedText
 - **Processing**: Extensive de-duplication and signal-preserving cleaning to maximize dataset quality within compute constraints
 
 ### Hardware & Optimization
 
-- **GPU**: NVIDIA P100 (Kaggle, 12-hour session limit)
+- **GPU**: NVIDIA P100 
 - **Optimizer**: AdamW with weight decay (0.1)
 - **Scheduler**: Cosine annealing with linear warmup
 - **Strategy**: Custom state-recovery checkpointing to handle multi-session training without loss spikes
@@ -113,9 +111,6 @@ SFT shifted the model from **open-ended next-token generation** (pretraining) to
 | **Final Validation Loss** | ~2.99 |
 | **Final Train Perplexity** | ~19.5 |
 | **Final Val Perplexity** | ~19.8 |
-
-The significant drop in perplexity from ~38.8 (pretrained) to ~19.8 (SFT) reflects the model's improved ability to generate structured, contextually appropriate clinical responses after instruction alignment.
-
 ---
 
 ## 🚀 Quick Start
@@ -232,30 +227,23 @@ Doctor:
 
 ```
 VitalLM-50M/
-├── assets/                  # Training analytics plots
+├── assets/
 │   ├── training_curve.png
 │   ├── lr_scheduler.png
-│   └── gradient_norm.png
-├── src/                     # Source scripts
-├── model.py                 # Model architecture (SLM, SLMConfig)
-├── app.py                   # Gradio demo application
-├── vocab_50m.json           # Custom BPE tokenizer vocabulary
-├── merges_50m.txt           # BPE merge rules
+│   ├── gradient_norm.png
+│   ├── VitalLM_SFT_Analysis.png
+│   ├── perplexity.png
+│   └── learning_velocity.png
+├── src/
+│   ├── pre_train.ipynb
+│   └── sft.ipynb
+├── model.py
+├── app.py
+├── vocab_50m.json
+├── merges_50m.txt
 └── README.md
 ```
 
-### Hugging Face Model Files
-
-| File | Description |
-|:---|:---|
-| `VitalLM_SFT_best.pt` | SFT model weights (instruction-tuned) |
-| `vital_lm_50m_weights.pt` | Pretrained base model weights |
-| `model.py` | Architecture definition |
-| `vocab_50m.json` | Tokenizer vocabulary |
-| `merges_50m.txt` | BPE merge rules |
-| `config.json` | Model configuration |
-
----
 
 ## 🔬 Engineering Insights
 
