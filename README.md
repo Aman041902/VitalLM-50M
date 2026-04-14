@@ -6,23 +6,15 @@
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge" alt="License"></a>
 </p>
 
-<p align="center">
-  <b>A 50.55M parameter decoder-only Transformer pretrained on 764M+ biomedical tokens and fine-tuned for instruction-following clinical dialogue.</b>
-</p>
-
 ---
 
 ## 📌 Overview
 
 VitalLM-50M-Instruct is a compact, edge-deployable Small Language Model (SLM) purpose-built for the biomedical domain. It was developed through a **two-stage training pipeline**:
 
-1. **Pretraining** on a 764M+ token filtered corpus of clinical literature and medical dialogues — learning deep biomedical language representations from scratch.
+1. **Pretraining** on a 550+ token filtered corpus of clinical literature and medical dialogues — learning deep biomedical language representations from scratch.
 2. **Supervised Fine-Tuning (SFT)** on 100K curated medical instruction-response pairs — aligning the model to follow clinical prompts and generate structured doctor-patient responses.
 
-| Stage | Dataset | Scale | Objective |
-|:---|:---|:---|:---|
-| **Pretraining** | PubMed QA, MedMCQA, BI55/MedText | 764M+ tokens | Next-token prediction |
-| **SFT** | Mohammed-Altaf/medical-instruction-100k | ~100K pairs | Instruction following |
 
 ---
 
@@ -43,11 +35,10 @@ VitalLM-50M uses a custom decoder-only Transformer implemented from scratch in P
 
 ### Key Design Choices
 
-**SwiGLU Activation** — Unlike standard ReLU/GeLU activations, SwiGLU improves non-linear reasoning density, enabling richer capture of complex relationships between medical symptoms, diagnoses, and drug interactions.
+- **SwiGLU Activation** — Unlike standard ReLU/GeLU activations, SwiGLU improves non-linear reasoning density, enabling richer capture of complex relationships between medical symptoms, diagnoses, and drug interactions.
 
-**Specialized Biomedical Tokenizer** — A custom ByteLevelBPE tokenizer was trained to preserve medical terminology as coherent units (e.g., `tachycardia`, `bronchitis`, `pharmacokinetics`), preventing fragmentation that degrades downstream reasoning quality.
+- **Specialized Biomedical Tokenizer** — A custom ByteLevelBPE tokenizer was trained to preserve medical terminology as coherent units (e.g., `tachycardia`, `bronchitis`, `pharmacokinetics`), preventing fragmentation that degrades downstream reasoning quality.
 
-**Weight Tying + Edge Optimization** — Parameter sharing between the input embedding and output projection layer reduces the effective memory footprint, making the model suitable for constrained environments without sacrificing representational capacity.
 
 ---
 
