@@ -160,7 +160,7 @@ tokenizer = GPT2TokenizerFast(
 import torch
 import torch.nn.functional as F
 from model import SLM, SLMConfig
-from transformers import PreTrainedTokenizerFast
+from transformers import GPT2TokenizerFast
 from huggingface_hub import hf_hub_download
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -176,10 +176,13 @@ model.load_state_dict(torch.load(sft_weights_path, map_location=device))
 model.to(device)
 model.eval()
 
-tokenizer = PreTrainedTokenizerFast(
-    vocab_file=vocab_path, merges_file=merges_path,
-    bos_token="<|endoftext|>", eos_token="<|endoftext|>",
-    unk_token="<|endoftext|>",  pad_token="<|endoftext|>"
+tokenizer = GPT2TokenizerFast(
+    vocab_file=vocab_path,
+    merges_file=merges_path,
+    bos_token="<|endoftext|>",
+    eos_token="<|endoftext|>",
+    unk_token="<|endoftext|>",
+    pad_token="<|endoftext|>"
 )
 ```
 
