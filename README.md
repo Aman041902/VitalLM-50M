@@ -131,7 +131,7 @@ pip install torch transformers huggingface_hub
 import torch
 import torch.nn.functional as F
 from model import SLM, SLMConfig
-from transformers import PreTrainedTokenizerFast
+from transformers import GPT2TokenizerFast
 from huggingface_hub import hf_hub_download
 
 # Download weights from Hugging Face Hub
@@ -146,10 +146,11 @@ model = SLM(config)
 model.load_state_dict(torch.load(weights_path, map_location="cpu"))
 model.eval()
 
-# Initialize tokenizer
-tokenizer = PreTrainedTokenizerFast(
-    vocab_file=vocab_path, merges_file=merges_path,
-    eos_token="<|endoftext|>", pad_token="<|endoftext|>"
+tokenizer = GPT2TokenizerFast(
+    vocab_file=vocab_path,
+    merges_file=merges_path,
+    eos_token="<|endoftext|>",
+    pad_token="<|endoftext|>"
 )
 ```
 
