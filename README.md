@@ -131,7 +131,8 @@ pip install torch transformers huggingface_hub
 import torch
 import torch.nn.functional as F
 from model import SLM, SLMConfig
-from transformers import GPT2TokenizerFast
+from tokenizers import ByteLevelBPETokenizer
+from transformers import PreTrainedTokenizerFast
 from huggingface_hub import hf_hub_download
 
 # Download weights from Hugging Face Hub
@@ -146,10 +147,15 @@ model = SLM(config)
 model.load_state_dict(torch.load(weights_path, map_location="cpu"))
 model.eval()
 
-tokenizer = GPT2TokenizerFast(
-    vocab_file=vocab_path,
-    merges_file=merges_path,
+base_tokenizer = ByteLevelBPETokenizer(
+    vocab=vocab_path,
+    merges=merges_path
+)
+tokenizer = PreTrainedTokenizerFast(
+    tokenizer_object=base_tokenizer,
     eos_token="<|endoftext|>",
+    bos_token="<|endoftext|>",
+    unk_token="<|endoftext|>",
     pad_token="<|endoftext|>"
 )
 ```
@@ -160,7 +166,8 @@ tokenizer = GPT2TokenizerFast(
 import torch
 import torch.nn.functional as F
 from model import SLM, SLMConfig
-from transformers import GPT2TokenizerFast
+from tokenizers import ByteLevelBPETokenizer
+from transformers import PreTrainedTokenizerFast
 from huggingface_hub import hf_hub_download
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -176,11 +183,14 @@ model.load_state_dict(torch.load(sft_weights_path, map_location=device))
 model.to(device)
 model.eval()
 
-tokenizer = GPT2TokenizerFast(
-    vocab_file=vocab_path,
-    merges_file=merges_path,
-    bos_token="<|endoftext|>",
+base_tokenizer = ByteLevelBPETokenizer(
+    vocab=vocab_path,
+    merges=merges_path
+)
+tokenizer = PreTrainedTokenizerFast(
+    tokenizer_object=base_tokenizer,
     eos_token="<|endoftext|>",
+    bos_token="<|endoftext|>",
     unk_token="<|endoftext|>",
     pad_token="<|endoftext|>"
 )
@@ -189,31 +199,58 @@ tokenizer = GPT2TokenizerFast(
 ### Inference
 
 ```python
-def generate_medical_response(prompt, max_new_tokens=150, temperature=0.4, top_k=40):
-    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
+def generate_medical_response(prompt, max_new_tokens=130, temperature=0.25, top_k=30, top_p=0.9, repetition_penalty=1.25):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    encoded = tokenizer.encode(prompt)
+    
+    # Guard against empty encoding
+    if len(encoded) == 0:
+        return "Error: prompt could not be tokenized."
+    
+    input_ids = torch.tensor(encoded, dtype=torch.long).unsqueeze(0).to(device)
 
     with torch.no_grad():
         for _ in range(max_new_tokens):
-            logits, _ = model(input_ids[:, -256:])   # Respect 256-token context window
-            logits = logits[:, -1, :] / temperature
+            input_ids_cond = input_ids[:, -256:]
+            
+            # Guard against empty tensor entering the model
+            if input_ids_cond.size(1) == 0:
+                break
 
+            logits, _ = model(input_ids_cond)
+            logits = logits[:, -1, :]  # (1, vocab_size)
+            logits = logits / temperature
+
+            # Repetition penalty
+            for token in set(input_ids[0].tolist()):
+                if logits[0, token] > 0:
+                    logits[0, token] /= repetition_penalty
+                else:
+                    logits[0, token] *= repetition_penalty
+
+            # Top-p
+            sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+            cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+            sorted_indices_to_remove = cumulative_probs > top_p
+            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+            sorted_indices_to_remove[..., 0] = 0
+            logits[0, sorted_indices[sorted_indices_to_remove]] = -float('Inf')
+
+            # Top-k
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float("Inf")
+                logits[logits < v[:, [-1]]] = -float('Inf')
 
-            probs      = F.softmax(logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
-            input_ids  = torch.cat((input_ids, next_token), dim=1)
+            next_token = torch.multinomial(F.softmax(logits, dim=-1), num_samples=1)
+            input_ids = torch.cat((input_ids, next_token), dim=1)
 
             if next_token.item() == tokenizer.eos_token_id:
                 break
 
     return tokenizer.decode(input_ids[0].tolist(), skip_special_tokens=True)
 
-# Example
-prompt   = "Patient: I have been feeling very thirsty and urinating frequently. Doctor:"
-response = generate_medical_response(prompt)
-print(response)
 ```
 
 ### Recommended Prompt Format
