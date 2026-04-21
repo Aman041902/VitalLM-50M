@@ -122,7 +122,7 @@ Clone this repository to get the custom architecture definitions, then install d
 ```bash
 git clone https://github.com/Aman041902/VitalLM-50M.git
 cd VitalLM-50M
-pip install torch transformers huggingface_hub
+pip install torch transformers huggingface_hub tokenizers
 ```
 
 ### Loading the Pretrained Base Model
